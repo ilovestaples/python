@@ -7,6 +7,8 @@ from pathlib import Path
 from datetime import datetime
 from bs4 import BeautifulSoup
 
+#v0.1.1
+
 _date = datetime.today().strftime("%b%d%Y%H%M%S")
 
 parser = argparse.ArgumentParser()
@@ -43,14 +45,26 @@ _fullpath = _path + '/content/' + args.subreddit + '/' + _date + '/'
 Path(_fullpath).mkdir(parents=True, exist_ok=True)
 
 count = 1
+_headers = {'User-agent': 'testscript by u/garraf4'}
+
 for sub in sub_collection:
     print("Getting content " + str(count) + " of " + str(args.limit) + "...")
     time.sleep(5)
-    content = requests.get(sub["link"], headers = {'User-agent': 'testscript by u/garraf4'})
+    content = requests.get(sub["link"], headers = _headers)
     c = content.json()
-    img_url = c[0]['data']['children'][0]['data']['url_overridden_by_dest']
-    b = requests.get(img_url, headers = {'User-agent': 'testscript by u/garraf4'})
-    with open(_fullpath + sub["id"] + '.jpg', 'wb') as f:
+
+    content_url = "url"
+    ext = "ext"
+    is_video = c[0]['data']['children'][0]['data']['is_video']
+    if is_video:
+        content_url = c[0]['data']['children'][0]['data']['media']['reddit_video']['fallback_url']
+        ext = ".mp4"
+    else:
+        content_url = c[0]['data']['children'][0]['data']['url']
+        ext = ".jpg"
+
+    b = requests.get(content_url, headers = _headers)
+    with open(_fullpath + sub["id"] + ext, 'wb') as f:
         f.write(b.content)
 
     with open(_fullpath + sub["id"] + '.txt', 'w') as g:
