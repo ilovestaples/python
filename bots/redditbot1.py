@@ -46,6 +46,7 @@ Path(_fullpath).mkdir(parents=True, exist_ok=True)
 
 count = 1
 _headers = {'User-agent': 'testscript by u/garraf4'}
+with_audio = []
 
 for sub in sub_collection:
     print("Getting content " + str(count) + " of " + str(args.limit) + "...")
@@ -55,13 +56,26 @@ for sub in sub_collection:
 
     content_url = "url"
     ext = "ext"
+    audio_ext = "audio_ext"
+    audio_url = "audio_url"
+
     is_video = c[0]['data']['children'][0]['data']['is_video']
     if is_video:
         content_url = c[0]['data']['children'][0]['data']['media']['reddit_video']['fallback_url']
         ext = ".mp4"
+
+        audio_url = c[0]['data']['children'][0]['data']['url'] + '/DASH_audio.mp4'
+        audio_ext = '.m4a'
     else:
         content_url = c[0]['data']['children'][0]['data']['url']
         ext = ".jpg"
+
+    if is_video:
+        audio = requests.get(audio_url, headers = _headers)
+        if audio.status_code == 200 :
+            with open(_fullpath + sub['id'] + audio_ext, 'wb') as h:
+                h.write(audio.content)
+            with_audio.append(sub['id'])
 
     b = requests.get(content_url, headers = _headers)
     with open(_fullpath + sub["id"] + ext, 'wb') as f:
@@ -76,3 +90,8 @@ for sub in sub_collection:
             g.write(comment["data"]["body"] + "\n")
 
     count += 1
+
+os.chdir(_fullpath)
+
+for wa in with_audio:
+    os.system('ffmpeg -hide_banner -loglevel panic -y -i ' + wa + '.mp4' ' -i ' + wa + '.m4a -vcodec copy -acodec copy ' + wa + '_with_audio.mp4')
